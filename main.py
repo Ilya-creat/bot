@@ -14,19 +14,16 @@ help_msg = (
 admin_msg = (
     "/add {id_lessons} (add file .json)\n"
     "/delete {id_lessons}\n"
-    "/add_q {id_lessons}\n"
-
+    "/add_q {id_lessons} {question} {points} [ans1, ans2, ans3, ans4]\n"
+    "/delete {id_question}\n"
+    "/info_question_id\n"
 )
 
 user = None
 
-async def help_handler(update, context):
-    await update.message.reply_text(help_msg)
-
 
 async def start_handler(update, context):
     global user
-    print(update)
     user = User(update.message.chat.id)
     if user.status["role"] != "admin":
         await update.message.reply_text(f"""
@@ -35,12 +32,17 @@ async def start_handler(update, context):
     else:
         await update.message.reply_text(f"""
             Привет {update.effective_user.name}! (Админ)
-            
         """)
 
 
-async def echo(update, context):
-    await update.message.reply_text(update.message.text)
+async def help_handler(update, context):
+    global user
+    user = User(update.message.chat.id)
+    if user.status["role"] != "admin":
+        await update.message.reply_text(help_msg)
+    else:
+        await update.message.reply_text(admin_msg)
+
 
 def main():
     application = Application.builder().token(BOT_TOKEN).build()
