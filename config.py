@@ -12,5 +12,6 @@ PROGRESS = {
 POINTS = {
     "lesson": 0,
     "card": 5,
-    "audio": 10
+    "audio": 10,
+    "question": 0
 }

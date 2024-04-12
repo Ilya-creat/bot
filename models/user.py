@@ -11,8 +11,8 @@ class User(Base):
         stat = json.loads(str(data[2]))
         self.status = stat["status"]
         self.role = stat["role"]
-        self.completed_cards = stat["cards"]
-        self.completed_audio = stat["audio"]
+        self.completed_cards = set(stat["cards"])
+        self.completed_audio = set(stat["audio"])
         self.points = stat["points"]
 
     def get_user(self, _id):
@@ -36,9 +36,10 @@ class User(Base):
                                   json.dumps({
                                       "status": self.status,
                                       "role": "user",
-                                      "points": self.points, "cards": self.completed_cards,
-                                      "audio": self.completed_audio,
-                                      "lessons": {}}), self.id_
+                                      "points": self.points,
+                                      "cards": list(self.completed_cards),
+                                      "audio": list(self.completed_audio),
+                                      "lessons": list()}), self.id_
                               ))
             self.db.commit()
         except Exception as e:
@@ -49,9 +50,9 @@ class User(Base):
             self.cur_.execute(f'INSERT INTO users VALUES (NULL, ?, ?)', (int(_id), json.dumps({
                 "status": "beginner",
                 "role": "user",
-                "points": 0, "cards": {},
-                "audio": {},
-                "lessons": {}})))
+                "points": 0, "cards": list(),
+                "audio": list(),
+                "lessons": list()})))
             self.db.commit()
         except Exception as e:
             print("User Error (register):", e)
