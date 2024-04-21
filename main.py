@@ -1,6 +1,7 @@
 import logging
 import random
 
+import requests
 from telegram import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, Bot, \
     InputMediaPhoto, InputMediaAudio
 from telegram.ext import Application, MessageHandler, filters, CommandHandler, CallbackContext, CallbackQueryHandler
@@ -23,22 +24,25 @@ help_msg = (
     "/help - Команды помощи\n"
 )
 admin_msg = (
-    "/add {id_lessons} (add file .json)\n"
-    "/delete {id_lessons}\n"
-    "/add_q {id_lessons} {question} {points} [ans1, ans2, ans3, ans4]\n"
-    "/delete {id_question}\n"
-    "/info_question_id\n"
+    "/delete_lesson id\n"
+    "/lessons_info [get id, name]\n"
+    "/cards_info [get id, ru]\n"
+    "/delete_audio id\n"
+    "/audios_info [get id, ru]\n"
 )
 
 user = None
 cards = Cards()
 audios = Audios()
-imban = ImageBan()
+imban = ImageBan(BOT_TOKEN)
 bot = Bot(token=BOT_TOKEN)
 lessons = Lessons()
+GLOBAL_BD = {}
+GLOBAL_PREV = {}
 
 
 def check_admin(user_model):
+    print(user_model.role)
     return user_model.role != "admin"
 
 
@@ -68,7 +72,7 @@ async def cards_handler(update, context):
 
 
 async def audio_handler(update, context):
-    global audios, bot, user
+    global audios, bot, user, BOT_TOKEN
     keyboard_user = [[
         InlineKeyboardButton('Выйти', callback_data='exit'),
         InlineKeyboardButton('Далее', callback_data='next?audio')
@@ -76,7 +80,8 @@ async def audio_handler(update, context):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard_user)
     us_audio = random.choice(audios.audios)
-    s = open(us_audio.get_pwd(), 'rb')
+    s = us_audio.get_pwd(BOT_TOKEN)
+    s = open(s, 'rb') if isinstance(us_audio.get_pwd(BOT_TOKEN), str) else s
     user = User(update.message.chat.id)
     user.completed_audio.add(us_audio.id_)
     user.update_user()
@@ -102,9 +107,12 @@ async def start_handler(update, context):
         Привет {update.effective_user.name}!\nВыбери режим:
         """, reply_markup=reply_markup)
     else:
+        keyboard_user.append(['Создать урок', 'Создать карточку', 'Создать аудио'])
+
+        reply_markup = ReplyKeyboardMarkup(keyboard_user, resize_keyboard=True)
         await update.message.reply_text(f"""
-            Привет {update.effective_user.name}! (Админ)
-        """)
+            Привет {update.effective_user.name}! (Админ)\nВыбери режим:
+        """, reply_markup=reply_markup)
 
 
 async def lesson_handler(update, context, id_=1, call_back=False):
@@ -198,27 +206,6 @@ async def lessons_handler(update, context, id_=0, call_back=False):
                                        reply_markup=reply_markup)
 
 
-async def start_handler_load(update, context):
-    global user
-    user = User(update.message.chat.id)
-    keyboard_user = [[
-        KeyboardButton('Уроки'),
-        KeyboardButton('Карточки'),
-        KeyboardButton('Аудио')
-    ],
-        [KeyboardButton('Профиль')]
-    ]
-    reply_markup = ReplyKeyboardMarkup(keyboard_user, resize_keyboard=True)
-    if check_admin(user):
-        await update.message.reply_text(f"""
-        Выбери режим:
-        """, reply_markup=reply_markup)
-    else:
-        await update.message.reply_text(f"""
-            Привет {update.effective_user.name}! (Админ)
-        """)
-
-
 async def profile_handler(update, context):
     global user
     user = User(update.message.chat.id)
@@ -234,11 +221,26 @@ async def profile_handler(update, context):
             """
             , parse_mode='MarkdownV2')
     else:
-        await update.message.reply_text(admin_msg)
+        await update.message.reply_text(
+            f"""
+                    *Ник*: {update.effective_user.name}\n
+*Роль*: Админ
+*Количество просмотренных карточек*: {len(user.completed_cards)}
+*Количество прослушанных аудио*: {len(user.completed_audio)}
+*Баллы*: {user.points}
+*Звание*: {user.status}
+                    """
+            , parse_mode='MarkdownV2')
 
 
 async def check_message(update, context):
-    print(update.message)
+    global GLOBAL_PREV, GLOBAL_BD
+    user = User(update.message.chat.id)
+    keyboard_user_cards = [[
+        InlineKeyboardButton('Выйти', callback_data='exit'),
+    ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard_user_cards)
     if update.message.text == 'Уроки':
         await update.message.reply_text(
             "Вы вошли в режим изучения уроков 😄"
@@ -259,8 +261,86 @@ async def check_message(update, context):
             "Вы вошли в профиль 😄"
         )
         await profile_handler(update, context)
+    elif update.message.text == 'Создать карточку':
+        await update.message.reply_text(
+            "Режим создания карточки"
+        )
+        await update.message.reply_text(
+            "Отправьте картинку"
+        )
+        GLOBAL_PREV[user.id_] = "/new_card:photo"
+    elif update.message.text == 'Создать аудио':
+        await update.message.reply_text(
+            "Режим создания аудио"
+        )
+        await update.message.reply_text(
+            "Отправьте аудио"
+        )
+        GLOBAL_PREV[user.id_] = "/new_audio:audio"
+    elif GLOBAL_PREV[user.id_] == "/new_card:en":
+        GLOBAL_BD[user.id_].append(update.message.text)
+        GLOBAL_PREV[user.id_] = '/new_card:ru'
+        await bot.send_message(chat_id=update.message.chat.id, text="Текст на русском:",
+                               reply_markup=reply_markup
+                               )
+    elif GLOBAL_PREV[user.id_] == "/new_card:ru":
+        GLOBAL_BD[user.id_].append(update.message.text)
+        GLOBAL_PREV[user.id_] = '/new_card:tr'
+        await bot.send_message(chat_id=update.message.chat.id, text="Текст транскрипции:",
+                               reply_markup=reply_markup
+                               )
+    elif GLOBAL_PREV[user.id_] == "/new_card:tr":
+        GLOBAL_BD[user.id_].append(update.message.text)
+        GLOBAL_PREV[user.id_] = None
+        await bot.send_message(chat_id=update.message.chat.id, text="Карточка сохранена")
+        cards.post_card(GLOBAL_BD[user.id_])
+        GLOBAL_BD[user.id_] = None
+    elif GLOBAL_PREV[user.id_] == "/new_audio:en":
+        GLOBAL_BD[user.id_].append(update.message.text)
+        GLOBAL_PREV[user.id_] = '/new_audio:ru'
+        await bot.send_message(chat_id=update.message.chat.id, text="Текст на русском:",
+                               reply_markup=reply_markup
+                               )
+    elif GLOBAL_PREV[user.id_] == "/new_audio:ru":
+        GLOBAL_BD[user.id_].append(update.message.text)
+        GLOBAL_PREV[user.id_] = None
+        await bot.send_message(chat_id=update.message.chat.id, text="Аудио сохранено")
+        audios.post_audio(GLOBAL_BD[user.id_])
     else:
         await update.message.reply_text("Неизвестная команда")
+
+
+async def check_photo(update, context):
+    global GLOBAL_PREV, GLOBAL_BD
+    user = User(update.message.chat.id)
+    keyboard_user_cards = [[
+        InlineKeyboardButton('Выйти', callback_data='exit'),
+    ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard_user_cards)
+    if not check_admin(user) and GLOBAL_PREV[user.id_] == '/new_card:photo':
+        GLOBAL_BD[user.id_] = ["/new_card:photo", "tg::" + update.message.photo[2].file_id]
+        GLOBAL_PREV[user.id_] = '/new_card:en'
+        await bot.send_message(chat_id=update.message.chat.id, text="Текст на английском:",
+                               reply_markup=reply_markup
+                               )
+
+
+async def check_audio(update, context):
+    global GLOBAL_PREV, GLOBAL_BD
+    user = User(update.message.chat.id)
+    keyboard_user_cards = [[
+        InlineKeyboardButton('Выйти', callback_data='exit'),
+    ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard_user_cards)
+
+    if not check_admin(user) and GLOBAL_PREV[user.id_] == '/new_audio:audio':
+        GLOBAL_BD[user.id_] = ["/new_audio:audio", "tg::" + update.message.audio.file_id]
+        GLOBAL_PREV[user.id_] = '/new_audio:en'
+        await bot.send_message(chat_id=update.message.chat.id, text="Текст на английском:",
+                               reply_markup=reply_markup
+                               )
 
 
 async def help_handler(update, context):
@@ -312,7 +392,8 @@ async def callback_handler(update, context):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard_user_audio)
         us_audio = random.choice(audios.audios)
-        s = open(us_audio.get_pwd(), 'rb')
+        s = us_audio.get_pwd(BOT_TOKEN)
+        s = open(s, 'rb') if isinstance(us_audio.get_pwd(BOT_TOKEN), str) else s
         user.completed_audio.add(us_audio.id_)
         user.update_user()
         await points(us_audio, update.callback_query.message.chat.id)
@@ -345,17 +426,55 @@ async def callback_handler(update, context):
                                                     text='Неверный ответ',
                                                     show_alert=True)
     elif choice == 'exit':
+        GLOBAL_BD[user.id_] = None
+        GLOBAL_PREV[user.id_] = None
         await update.callback_query.message.delete()
         await bot.send_message(text="Выберите режим:", chat_id=update.callback_query.message.chat.id)
     else:
         await bot.send_message(text="<Бот не распознал *?*>", chat_id=update.callback_query.message.chat.id)
 
 
+async def card_del(update, context):
+    cards.delete(int(update.message.text.split()[1]))
+    await bot.send_message(chat_id=update.message.chat.id, text="Карточка была удалена по возможности")
+
+
+async def audio_del(update, context):
+    audios.delete(int(update.message.text.split()[1]))
+    await bot.send_message(chat_id=update.message.chat.id, text="Карточка была удалена по возможности")
+
+
+async def cards_info(update, context):
+    ss = cards.get_cards()
+    name = f'txt/cards_{random.randint(1, 100000000000)}.txt'
+    s = open(name, 'w+')
+    for i in ss:
+        s.write(str(i.id_) + "\t" + i.ru + '\n')
+    s.close()
+    await bot.send_document(chat_id=update.message.chat.id, document=open(name, 'rb'))
+
+
+async def audios_info(update, context):
+    ss = audios.get_audios()
+    name = f'txt/audios_{random.randint(1, 100000000000)}.txt'
+    s = open(name, 'w+')
+    for i in ss:
+        s.write(str(i.id_) + "\t" + i.ru + '\n')
+    s.close()
+    await bot.send_document(chat_id=update.message.chat.id, document=open(name, 'rb'))
+
+
 def main():
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("start", start_handler))
     application.add_handler(CommandHandler("help", help_handler))
+    application.add_handler(CommandHandler("delete_card", card_del))
+    application.add_handler(CommandHandler("cards_info", cards_info))
+    application.add_handler(CommandHandler("delete_audio", audio_del))
+    application.add_handler(CommandHandler("audios_info", audios_info))
     application.add_handler(MessageHandler(filters.TEXT, check_message))
+    application.add_handler(MessageHandler(filters.PHOTO, check_photo))
+    application.add_handler(MessageHandler(filters.AUDIO, check_audio))
     application.add_handler(CallbackQueryHandler(callback_handler))
     application.run_polling()
 

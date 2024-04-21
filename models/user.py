@@ -35,7 +35,7 @@ class User(Base):
                               (
                                   json.dumps({
                                       "status": self.status,
-                                      "role": "user",
+                                      "role": self.role,
                                       "points": self.points,
                                       "cards": list(self.completed_cards),
                                       "audio": list(self.completed_audio),
