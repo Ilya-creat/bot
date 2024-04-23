@@ -1,0 +1,7 @@
+id	telegram_id	json_log
+1	1	{"status": "beginner",
+                                                                                                   "role": "user"
+                                                                                                   }
+3	6448285052	{"status": "specialist", "role": "admin", "points": 1065, "cards": [1, 2, 3, 4, 8], "audio": [1, 2, 3, 4, 5, 6], "lessons": []}
+4	1757000728	{"status": "student", "role": "admin", "points": 230, "cards": [1, 2, 3, 4, 8], "audio": [1, 2, 3, 4, 5], "lessons": []}
+6	1397250320	{"status": "beginner", "role": "admin", "points": 0, "cards": {}, "audio": {}, "lessons": {}}

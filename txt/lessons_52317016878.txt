@@ -1,0 +1,7 @@
+id	name	questions
+1	义耱 1	[<models.lessons.Question object at 0x000001CC4F8F47C0>, <models.lessons.Question object at 0x000001CC4F8F47F0>]
+2	义耱 2	[]
+3	义耱 3	[]
+4	义耱 4	[]
+5	义耱 5	[]
+6	义耱 6	[]
