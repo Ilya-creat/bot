@@ -56,3 +56,14 @@ class User(Base):
             self.db.commit()
         except Exception as e:
             print("User Error (register):", e)
+
+    def admin_users_info(self):
+        try:
+            data = self.cur_.execute('SELECT * FROM users').fetchall()
+            res = []
+            for i in data:
+                res.append(i)
+            return res
+        except Exception as e:
+            print("User Error (admin_users_info):", e)
+

@@ -38,7 +38,7 @@ class Audios(Base):
         except Exception as e:
             print("Cards Error (get_cards):", e)
 
-    def reloads_cards(self):
+    def reload(self):
         self.audios = self.get_audios()
 
     def post_audio(self, TOKEN):
@@ -46,7 +46,7 @@ class Audios(Base):
             self.cur_.execute("INSERT INTO audios VALUES (NULL, ?, ?, ?, 'audio', 0)",
                               (TOKEN[1], TOKEN[2], TOKEN[3]))
             self.db.commit()
-            self.reloads_cards()
+            self.reload()
         except Exception as e:
             print("Cards Error (post_card):", e)
 
@@ -54,6 +54,6 @@ class Audios(Base):
         try:
             self.cur_.execute("DELETE FROM audios WHERE id=?", (id_, ))
             self.db.commit()
-            self.reloads_cards()
+            self.reload()
         except Exception as e:
             print("Cards Error (delete):", e)

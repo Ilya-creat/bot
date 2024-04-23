@@ -30,7 +30,7 @@ class Cards(Base):
         except Exception as e:
             print("Cards Error (get_cards):", e)
 
-    def reloads_cards(self):
+    def reload(self):
         self.cards = self.get_cards()
 
     def post_card(self, TOKEN):
@@ -38,7 +38,7 @@ class Cards(Base):
             self.cur_.execute("INSERT INTO cards VALUES (NULL, ?, ?, ?, ?, 'card', 0)",
                               (TOKEN[1], TOKEN[2], TOKEN[3], TOKEN[4]))
             self.db.commit()
-            self.reloads_cards()
+            self.reload()
         except Exception as e:
             print("Cards Error (post_card):", e)
 
@@ -46,6 +46,6 @@ class Cards(Base):
         try:
             self.cur_.execute("DELETE FROM cards WHERE id=?", (id_, ))
             self.db.commit()
-            self.reloads_cards()
+            self.reload()
         except Exception as e:
             print("Cards Error (delete):", e)

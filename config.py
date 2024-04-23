@@ -1,5 +1,4 @@
 BOT_TOKEN = "7003683876:AAEB4bgnIpdr3h8S1xajUN5WeUe0OH-JOzw"
-CLIENT_TOKEN = "hZ4y6mHviQw97os0tAru"
 PROGRESS = {
     "100": "beginner",
     "500": "student",
