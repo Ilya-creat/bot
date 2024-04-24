@@ -362,7 +362,7 @@ async def check_lesson(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard_user_cards)
     if not check_user(user) and GLOBAL_PREV[user.id_] == '/new_lesson:file':
         GLOBAL_BD[user.id_] = ["/new_lesson:file", update.message.document.file_id]
-        res = lessons.add_lesson(BOT_TOKEN, update.message.document.file_id)
+        res = lessons.post_lesson(BOT_TOKEN, update.message.document.file_id)
         await bot.send_message(chat_id=update.message.chat.id, text="Проверка целостности урока...",
                                reply_markup=reply_markup
                                )

@@ -64,7 +64,7 @@ class Lessons(Base):
         except Exception as e:
             print("Lessons Error (get_lessons):", e)
 
-    def add_lesson(self, TOKEN, id_):
+    def post_lesson(self, TOKEN, id_):
         try:
             file = json.loads(TgAPI(TOKEN).getFile(id_))
             if not file["name"] or not file["text"] or not file["questions"]:
