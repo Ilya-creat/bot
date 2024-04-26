@@ -220,8 +220,7 @@ async def profile_handler(update, context):
 *Количество прослушанных аудио*: {len(user.completed_audio)}
 *Баллы*: {user.points}
 *Звание*: {user.status}
-            """
-            , parse_mode='MarkdownV2')
+            """, parse_mode='MarkdownV2')
     else:
         await update.message.reply_text(
             f"""
@@ -231,8 +230,7 @@ async def profile_handler(update, context):
 *Количество прослушанных аудио*: {len(user.completed_audio)}
 *Баллы*: {user.points}
 *Звание*: {user.status}
-                    """
-            , parse_mode='MarkdownV2')
+                    """, parse_mode='MarkdownV2')
 
 
 async def check_message(update, context):
