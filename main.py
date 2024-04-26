@@ -13,6 +13,7 @@ from models.lessons import Lessons
 from models.user import User
 from models.сards import Cards
 import re
+from telegram.helpers import escape_markdown
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -48,7 +49,7 @@ def check_user(user_model):
 
 
 def MarkdownV2(s):
-    return re.escape(s)
+    return escape_markdown(s, version=2)
 
 
 async def cards_handler(update, context):
@@ -213,7 +214,7 @@ async def profile_handler(update, context):
     if check_user(user):
         await update.message.reply_text(
             f"""
-            *Ник*: {update.effective_user.name}\n
+            *Ник*: {MarkdownV2(update.effective_user.name)}\n
 *Роль*: Пользователь
 *Количество просмотренных карточек*: {len(user.completed_cards)}
 *Количество прослушанных аудио*: {len(user.completed_audio)}
@@ -224,7 +225,7 @@ async def profile_handler(update, context):
     else:
         await update.message.reply_text(
             f"""
-                    *Ник*: {update.effective_user.name}\n
+                    *Ник*: {MarkdownV2(update.effective_user.name)}\n
 *Роль*: Админ
 *Количество просмотренных карточек*: {len(user.completed_cards)}
 *Количество прослушанных аудио*: {len(user.completed_audio)}
